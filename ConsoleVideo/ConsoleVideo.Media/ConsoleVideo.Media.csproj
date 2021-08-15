@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <AssemblyVersion>1.0.1</AssemblyVersion>
+        <Configurations>Debug-Windows;Release-Windows</Configurations>
+        <Platforms>x64</Platforms>
+        <PackageVersion>1.0.1</PackageVersion>
+        <LangVersion>preview</LangVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug-Windows|x64' ">
+      <DebugSymbols Condition=" '$(DebugSymbols)' == '' ">true</DebugSymbols>
+      <Optimize Condition=" '$(Optimize)' == '' ">false</Optimize>
+      <DefineConstants>TRACECOREAPP;WINDOWS</DefineConstants>
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release-Windows|x64' ">
+      <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+      <DefineConstants>TRACECOREAPP;WINDOWS</DefineConstants>
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FFMediaToolkit" Version="4.1.1" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="1.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ConsoleVideo.Math\ConsoleVideo.Math.csproj" />
+      <ProjectReference Include="..\CUDA11.4\CUDA11.4.vcxproj" />
+    </ItemGroup>
+
+</Project>
