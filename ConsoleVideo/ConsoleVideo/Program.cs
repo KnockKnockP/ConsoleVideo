@@ -42,7 +42,7 @@ namespace ConsoleVideo {
                 return ExitCode.PlatformNotSupported;
             }
 
-            Console.Title = "Console video.";
+            Console.Title = "ConsoleVideo";
             Console.CursorVisible = false;
             Console.Clear();
 
