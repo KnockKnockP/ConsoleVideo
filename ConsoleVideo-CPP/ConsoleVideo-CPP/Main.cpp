@@ -95,22 +95,24 @@ void FFmpegTest(char *path) {
 
 int main(int argc, char *argv[]) {
     ExitCode exitCode = Success;
+
+    const Console console(L"ConsoleVideo");
+    console.SetupConsoleRestrictions();
     
     try {
-        const Console console(L"ConsoleVideo");
-        console.SetupConsoleRestrictions();
-
         Video video(/*argv[1]*/ "D:\\GitHub\\ConsoleVideo\\ConsoleVideo\\ConsoleVideo\\Resources\\Videos\\TestVideo.mp4");
         video.LoadCodec();
 
         std::cout << "(" << video.width << ", " << video.height << ")" << std::endl;
 
-        console.RevertConsoleRestrictions();
+        video.LoadFrames();
     } catch (const std::exception& exception) {
         std::cerr << "Exception: " << exception.what() << std::endl;
         exitCode = Failure;
     }
-    
+
+    console.RevertConsoleRestrictions();
+
     std::cout << "Execution done." << std::endl <<
                  "Exit code: " << exitCode << std::endl;
     std::cin.get();
