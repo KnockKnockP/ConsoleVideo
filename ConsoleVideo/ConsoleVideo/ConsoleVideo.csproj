@@ -29,7 +29,6 @@
       <ProjectReference Include="..\ConsoleVideo.IO\ConsoleVideo.IO.csproj" />
       <ProjectReference Include="..\ConsoleVideo.Math\ConsoleVideo.Math.csproj" />
       <ProjectReference Include="..\ConsoleVideo.Media\ConsoleVideo.Media.csproj" />
-      <ProjectReference Include="..\ConsoleVideo.Windows\ConsoleVideo.Windows.csproj" />
     </ItemGroup>
 
     <ItemGroup>

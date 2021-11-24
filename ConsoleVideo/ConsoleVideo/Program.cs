@@ -1,9 +1,6 @@
-﻿//TODO: Either just remove CUDA support or just rewrite this whole application in C++.
-
-using ConsoleVideo.IO;
+﻿using ConsoleVideo.IO;
 using ConsoleVideo.Math;
 using ConsoleVideo.Media;
-using ConsoleVideo.Windows;
 using FFMediaToolkit;
 using FFMediaToolkit.Decoding;
 using FFMediaToolkit.Graphics;
@@ -12,19 +9,16 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using System.Text;
+using System.Xml;
 
 namespace ConsoleVideo {
     internal static class Program {
-        private static bool IsPlatformSupported => (Environment.OSVersion.Platform == PlatformID.Win32NT);
-        private static readonly Vector2Int fontPixelSize = new(8, 8);
-
-        private static void Main(string[] args) {
+        private static void Main() {
             try {
-                ExitCode exitCode = Run(args);
+                ExitCode exitCode = Run();
 
                 Console.Write("Execution done.\r\n" +
                               $"Exit code: {exitCode}.\r\n");
@@ -37,86 +31,20 @@ namespace ConsoleVideo {
             return;
         }
 
-        private static ExitCode Run(IReadOnlyList<string> arguments) {
-            if (IsPlatformSupported == false) {
-                return ExitCode.PlatformNotSupported;
-            }
+        private static ExitCode Run() {
+            InitializeFFmpeg(true);
+            LoadVideo(out Video video);
 
-            Console.Title = "ConsoleVideo";
-            Console.CursorVisible = false;
-            Console.Clear();
-
-            //Yes, this is a shitty way of handling errors.
-            ExitCode tempExitCode = InitializeFFmpeg(arguments.Contains("--automaticFFmpeg")); //TODO: THIS IS A BAD WAY OF HANDLING ARGUMENTS, WRITE A BETTER CODE.
-            if (tempExitCode != ExitCode.Success) {
-                return tempExitCode;
-            }
-
-            tempExitCode = LoadVideo(out Video video);
-            if (tempExitCode != ExitCode.Success) {
-                return tempExitCode;
-            }
-
-            /*
-                The scale looks weird when resized because the vertical size of the font is larger than it's width.
-                To prevent that, we switch the font to "Raster Font" and set the size to 8 x 8.
-            */
-            tempExitCode = SwitchFont();
-            if (tempExitCode != ExitCode.Success) {
-                return tempExitCode;
-            }
-
-            tempExitCode = DisableResize();
-            if (tempExitCode != ExitCode.Success) {
-                return tempExitCode;
-            }
-
-            Vector2Int windowSize = ResizeConsole(video);
-            Console.Write($"Console size: ({(windowSize.x * fontPixelSize.x)}, {(windowSize.y * fontPixelSize.y)}).\r\n");
-
-            IEnumerable<IFrame> frames = GenerateFrames(windowSize,
+            IEnumerable<IFrame> frames = GenerateFrames(new Vector2Int(4, 4),
                                                         video,
                                                         video.resolution);
 
-            //Just in case.
-            GC.Collect(2,
-                       GCCollectionMode.Forced,
-                       true,
-                       true);
-            GC.WaitForPendingFinalizers();
-
-            bool stable = UserInput.AskUserChoice('s',
-                                                  "Stable wait time (It might get faster or slower than the original).",
-                                                  "Variable wait time (It might get choppy).");
-
-            double sleepTime = (1000d / video.frameRate),
-                   previousMilliseconds = sleepTime;
-            Stopwatch stopwatch = new();
-            foreach (IFrame frame in frames) {
-                stopwatch.Restart();
-
-                Console.SetCursorPosition(0, 0);
-                for (int y = 0; y < windowSize.y; ++y) {
-                    for (int x = 0; x < windowSize.x; ++x) {
-                        FastConsole.Write(frame.GetPixel(y, x)
-                                               .ToString());
-                    }
-                }
-                FastConsole.Flush();
-
-                while (true) {
-                    double milliseconds = stopwatch.Elapsed.TotalMilliseconds;
-                    bool condition = ((stable == true) ? (milliseconds >= sleepTime) : (milliseconds >= (sleepTime + (sleepTime - previousMilliseconds))));
-                    if (condition == true) {
-                        previousMilliseconds = milliseconds;
-                        break;
-                    }
-                }
-            }
+            const string filePath = @"C:\Users\memeb\Desktop\xml.txt";
+            GenerateXml(frames.ToArray(), filePath);
             return ExitCode.Success;
         }
 
-        private static ExitCode InitializeFFmpeg(bool automaticSearch) {
+        private static void InitializeFFmpeg(bool automaticSearch) {
             if (automaticSearch == true) {
                 FFmpegLoader.FFmpegPath = IoUtilities.FindDirectory("ffmpeg");
             } else {
@@ -126,17 +54,17 @@ namespace ConsoleVideo {
                 };
 
                 if (commonOpenFileDialog.ShowDialog() != CommonFileDialogResult.Ok) {
-                    return ExitCode.FileDialogFailed;
+                    return;
                 }
 
                 FFmpegLoader.FFmpegPath = commonOpenFileDialog.FileName;
             }
 
             FFmpegLoader.LoadFFmpeg();
-            return ExitCode.Success;
+            return;
         }
 
-        private static ExitCode LoadVideo(out Video video) {
+        private static void LoadVideo(out Video video) {
             video = null;
 
             using CommonOpenFileDialog commonOpenFileDialog = new("Select a video to play.");
@@ -144,84 +72,115 @@ namespace ConsoleVideo {
             commonOpenFileDialog.Filters.Add(new CommonFileDialogFilter("AVI video", "*.avi"));
 
             if (commonOpenFileDialog.ShowDialog() != CommonFileDialogResult.Ok) {
-                return ExitCode.FileDialogFailed;
+                return;
             }
 
             string videoFilePath = commonOpenFileDialog.FileName;
 
             video = new Video(MediaFile.Open(videoFilePath));
-            return ExitCode.Success;
-        }
-
-        private static ExitCode SwitchFont() {
-            IntPtr outputHandle = WindowsApi.GetStdHandle(ParameterConstant.STD_OUTPUT_HANDLE);
-            if (outputHandle == WindowsApi.INVALID_HANDLE_VALUE) {
-                Console.Error.Write("Failed to get output handle.\r\n");
-                return ExitCode.FailedToModifyConsoleWindow;
-            }
-
-            CONSOLE_FONT_INFOEX newFont = new() {
-                dwFontSize = new COORD((short)(fontPixelSize.x), (short)(fontPixelSize.y)),
-                FontFamily = 0,
-                FontWeight = FontWeights.Normal
-            };
-            newFont.cbSize = (uint)(Marshal.SizeOf(newFont));
-            return ConsoleConfiguration.SwitchFont(outputHandle,
-                                                   newFont,
-                                                   "Terminal");
-        }
-
-        private static ExitCode DisableResize() {
-            IntPtr consoleHandle = WindowsApi.GetConsoleWindow();
-            if (consoleHandle == WindowsApi.INVALID_HANDLE_VALUE) {
-                Console.Error.Write("Failed to get the console handle.\r\n");
-                return ExitCode.FailedToModifyConsoleWindow;
-            }
-            return ConsoleConfiguration.DisableResize(consoleHandle);
-        }
-
-        private static Vector2Int ResizeConsole(Video video) {
-            //const int emptySpace = 5;
-            const int emptySpace = 0;
-            Vector2Int largestWindowSize = new((Console.LargestWindowWidth - emptySpace), (Console.LargestWindowHeight - emptySpace)),
-                       windowSize = new(largestWindowSize.x, largestWindowSize.y);
-
-            if (largestWindowSize.x > largestWindowSize.y) {
-                windowSize.x = (int)(largestWindowSize.y * video.ratio);
-            } else {
-                windowSize.y = (int)(largestWindowSize.x * video.ratio);
-            }
-            Console.SetWindowSize(windowSize.x, windowSize.y);
-            Console.SetBufferSize(windowSize.x, (windowSize.y + 1));
-            return windowSize;
+            return;
         }
 
         private static IEnumerable<IFrame> GenerateFrames(Vector2Int windowSize,
                                                           Video video,
                                                           Vector2Int videoSize) {
-            bool cuda = UserInput.AskUserChoice('c',
-                                                "Use CUDA 11.4 (Very slow due to bad implementation + dependency of .NET libraries. Memory leak may occur).",
-                                                $"Use {nameof(Parallel)}.{nameof(Parallel.For)}.");
-
-            FrameGenerator frameGenerator = new(cuda,
-                                                windowSize,
+            FrameGenerator frameGenerator = new(windowSize,
                                                 video.resolution.x,
                                                 video.resolution.y);
 
             IList<IFrame> frames = new List<IFrame>();
-            int frameCount = 0;
+            int totalFrameCount = 0,
+                frameCount = 0;
             while (video.mediaFile.Video.TryGetNextFrame(out ImageData imageData) == true) {
-                using (Image<Rgb24> image = Image.LoadPixelData<Rgb24>(imageData.Data,
-                                                                       videoSize.x,
-                                                                       videoSize.y)) {
-                    frames.Add(frameGenerator.Convert(image));
-                    image.Dispose();
+                ++frameCount;
+                switch (frameCount) {
+                    case 1: {
+                        using (Image<Rgb24> image = Image.LoadPixelData<Rgb24>(imageData.Data,
+                                                                               videoSize.x,
+                                                                               videoSize.y)) {
+                            frames.Add(frameGenerator.Convert(image));
+                            image.Dispose();
+                        }
+                        Console.Write($"\r{++totalFrameCount} frames converted to convertable format.");
+                        break;
+                    }
+                    case 30:
+                        frameCount = 0;
+                        break;
                 }
-                Console.Write($"\r{++frameCount} frames converted.");
             }
             video.mediaFile.Dispose();
             Console.Write("\r\n");
             return frames.ToArray();
+        }
+
+        private static void GenerateXml(ICollection<IFrame> frames, string filePath) {
+            /*
+            StringBuilder stringBuilder = new("<block xmlns=\"https://developers.google.com/blocky/xml\" type=\"subroutineBlock\" deletable=\"false\" x=\"0\" y=\"3000\"\r\n" +
+                                              "<field name=\"SUBROUTINE_NAME\">PlayVideo</field>\r\n" +
+                                              "<statement name=\"ACTIONS\">\r\n" +
+                                              "<block type=\"SetVariable\">\r\n" + //SetVariable start.
+                                              "<value name=\"VALUE-0\">\r\n" + //SetVariable first parameter start.
+                                              "<block type=\"variableReferenceBlock\">\r\n" + //SetVariable.VariableReference start.
+                                              "<mutation isObjectVar=\"true\" />\r\n" +
+                                              "<field name=\"OBJECTTYPE\">Player</field>\r\n" +
+                                              "");
+            */
+            /*
+            StringBuilder stringBuilder = new("<block xmlns=\"https://developers.google.com/blocky/xml\" type=\"subroutineBlock\" deletable=\"false\" x=\"0\" y=\"3000\"\r\n" +
+                                              "<field name=\"SUBROUTINE_NAME\">PlayVideo</field>\r\n" +
+                                              "<statement name=\"ACTIONS\">\r\n");
+
+            for (int i = 0; i < frames.Count; ++i) {
+                for (int y = 0; y < 4; ++y) {
+                    for (int x = 0; x < 4; ++x) {
+                        if (i != 0) {
+                            stringBuilder.Append("<next>");
+                        }
+                    }
+                }
+            }
+            stringBuilder.Append("</statement>\r\n" +
+                                 "</block>");
+            return stringBuilder.ToString();
+            */
+
+            XmlDocument xmlDocument = new();
+
+            {
+                //Subroutine block.
+                XmlNode subroutineBlock = xmlDocument.CreateElement("block");
+
+                //Subroutine.xmlns.
+                XmlAttribute subroutineXmlns = xmlDocument.CreateAttribute("xmlns");
+                subroutineXmlns.Value = "https://developers.google.com/blocky/xml";
+                subroutineBlock.Attributes?.Append(subroutineXmlns);
+
+                //Subroutine.type.
+                XmlAttribute subroutineType = xmlDocument.CreateAttribute("type");
+                subroutineType.Value = "subroutineBlock";
+                subroutineBlock.Attributes?.Append(subroutineType);
+
+                //Subroutine.deletable.
+                XmlAttribute subroutineDeletable = xmlDocument.CreateAttribute("deletable");
+                subroutineDeletable.Value = "false";
+                subroutineBlock.Attributes?.Append(subroutineDeletable);
+
+                //Subroutine.x.
+                XmlAttribute subroutineX = xmlDocument.CreateAttribute("x");
+                subroutineX.Value = "0";
+                subroutineBlock.Attributes?.Append(subroutineX);
+
+                //Subroutine.y.
+                XmlAttribute subroutineY = xmlDocument.CreateAttribute("y");
+                subroutineY.Value = "3000";
+                subroutineBlock.Attributes?.Append(subroutineY);
+
+                xmlDocument.AppendChild(subroutineBlock);
+            }
+
+            xmlDocument.Save(filePath);
+            return;
         }
     }
 }
