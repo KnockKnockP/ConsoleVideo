@@ -1,25 +1,31 @@
 ﻿using ConsoleVideo.Math;
 
 namespace ConsoleVideo.Media {
-    public sealed class CharFrame : IFrame {
-        private readonly Vector2Int size;
-
+    public sealed class CharFrame : IFrame<char> {
         private readonly char[] frame;
 
-        public CharFrame(Vector2Int _size) => (size, frame) = (_size, new char[(_size.x * _size.y)]);
+        public Vector2Int Size {
+            get;
+        }
 
-        public CharFrame(Vector2Int _size, char[] _chars) => (size, frame) = (_size, _chars);
+        public CharFrame(Vector2Int _size) => (Size, frame) = (_size, new char[(_size.x * _size.y)]);
+
+        public CharFrame(Vector2Int _size, char[] _chars) => (Size, frame) = (_size, _chars);
+
+        public char GetPixel(int index) => frame[index];
 
         public char GetPixel(int y, int x) =>
             frame[ArrayMath.GetIndex(y,
                                      x,
-                                     size.x)];
+                                     Size.x)];
+
+        public void SetPixel(int index, char value) => frame[index] = value;
 
         public void SetPixel(int y,
                              int x,
-                             object value) =>
+                             char value) =>
             frame[ArrayMath.GetIndex(y,
                                      x,
-                                     size.x)] = (char)(value);
+                                     Size.x)] = value;
     }
 }

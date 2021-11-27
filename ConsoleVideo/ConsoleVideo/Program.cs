@@ -9,49 +9,15 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Xml;
 
 namespace ConsoleVideo {
-    internal enum VariableType {
-        Global,
-        Player
-    }
-
-    internal class Variable {
-        internal string Name {
-            get;
-        }
-
-        internal string Id {
-            get;
-        }
-
-        internal VariableType VariableType {
-            get;
-        }
-
-        internal Variable(string name,
-                          string id,
-                          VariableType variableType) =>
-            (Name, Id, VariableType) = (name, id, variableType);
-    }
-
-    internal static class Variables {
-        internal static class Global {
-            internal static Variable bots = new("bots", "#4ZmAI-vJd!l](jlWUzx", VariableType.Global);
-        }
-
-        internal static class Player {
-            internal static Variable xPos = new("XPos", "5H=*|N/9GDv7.m2xeB#h", VariableType.Player);
-            internal static Variable zPos = new("ZPos", "eLIiC!~J-hc/g0swP|yZ", VariableType.Player);
-            internal static Variable originalXPos = new("OriginalXPos", "t+bpytFC@2U_67K_GR~$", VariableType.Player);
-            internal static Variable originalZPos = new("OriginalZPos", "?6M.DyoFB8!)KKs4w/R0", VariableType.Player);
-        }
-    }
-
     internal static class Program {
+        private static readonly Vector2Int Size = new(7, 7);
+
         private static void Main() {
             try {
                 ExitCode exitCode = Run();
@@ -71,26 +37,14 @@ namespace ConsoleVideo {
             InitializeFFmpeg(true);
             LoadVideo(out Video video);
 
-            IEnumerable<IFrame> frames = GenerateFrames(new Vector2Int(4, 4),
-                                                        video,
-                                                        video.resolution);
+            IEnumerable<IFrame<char>> frames = GenerateFrames(Size,
+                                                              video,
+                                                              video.resolution);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
-
-            /*
-            XmlDocument xmlDocument = new();
-            
-            XmlNode subroutineBlock = xmlDocument.CreateElement("root");
-            xmlDocument.AppendChild(subroutineBlock);
-
-            subroutineBlock.AppendChild(GenerateVariableReference(xmlDocument,
-                                                                  Variables.Player.originalXPos,
-                                                                  null));
-
-            xmlDocument.Save(filePath);
-            */
-
             GenerateXml(frames.ToArray(), filePath);
+
+            PlayVideo(frames.ToArray());
             return ExitCode.Success;
         }
 
@@ -131,14 +85,20 @@ namespace ConsoleVideo {
             return;
         }
 
-        private static IEnumerable<IFrame> GenerateFrames(Vector2Int windowSize,
-                                                          Video video,
-                                                          Vector2Int videoSize) {
+        private static IEnumerable<IFrame<char>> GenerateFrames(Vector2Int windowSize,
+                                                                Video video,
+                                                                Vector2Int videoSize) {
             FrameGenerator frameGenerator = new(windowSize,
                                                 video.resolution.x,
                                                 video.resolution.y);
 
-            IList<IFrame> frames = new List<IFrame>();
+            IList<IFrame<char>> frames = new List<IFrame<char>>();
+            frames.Add(new CharFrame(videoSize));
+            for (int i = 0; i < (videoSize.x * videoSize.y); ++i) {
+                frames[0]
+                    .SetPixel(i, ' ');
+            }
+
             int totalFrameCount = 0,
                 frameCount = 0;
             while (video.mediaFile.Video.TryGetNextFrame(out ImageData imageData) == true) {
@@ -164,7 +124,48 @@ namespace ConsoleVideo {
             return frames.ToArray();
         }
 
-        private static void GenerateXml(ICollection<IFrame> frames, string filePath) {
+        private static void PlayVideo(IList<IFrame<char>> frames) {
+            Console.ReadKey();
+            Console.Clear();
+
+            bool stable = false;
+
+            double sleepTime = 1000d,
+                   previousMilliseconds = sleepTime;
+            Stopwatch stopwatch = new();
+            for (int i = 1; i < frames.Count; i++) {
+                IFrame<char> frame = frames[i];
+                stopwatch.Restart();
+
+                Console.SetCursorPosition(0, 0);
+                for (int y = 0; y < Size.x; ++y) {
+                    for (int x = 0; x < Size.y; ++x) {
+                        char charToWrite = frame.GetPixel(y, x);
+                        if (charToWrite == ' ') {
+                            charToWrite = '.';
+                        }
+
+                        FastConsole.Write(charToWrite
+                                              .ToString());
+                    }
+                    FastConsole.Write("\r\n");
+                }
+                FastConsole.Write((i - 1).ToString());
+                FastConsole.Flush();
+
+                while (true) {
+                    double milliseconds = stopwatch.Elapsed.TotalMilliseconds;
+                    bool condition = ((stable == true) ? (milliseconds >= sleepTime) : (milliseconds >= (sleepTime + (sleepTime - previousMilliseconds))));
+                    if (condition == true) {
+                        previousMilliseconds = milliseconds;
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+
+        private static void GenerateXml(IList<IFrame<char>> frames, string filePath) {
             XmlDocument xmlDocument = new();
 
             {
@@ -218,11 +219,41 @@ namespace ConsoleVideo {
                         actionsBlock.Attributes?.Append(actionsName);
                     }
 
-                    //SetVariable.
-                    actionsBlock.AppendChild(GenerateSetVariable(xmlDocument,
-                                                                 Variables.Player.xPos,
-                                                                 0,
-                                                                 false));
+                    {
+                        XmlNode previousBlock = null;
+
+                        for (int i = 1; i < frames.Count; ++i) {
+                            CharFrame frame = (CharFrame)(frames[i]),
+                                      previousFrame = (CharFrame)(frames[(i - 1)]);
+                            for (int j = 0; j < (frame.Size.x * frame.Size.y); ++j) {
+                                if (frame.GetPixel(j) != previousFrame.GetPixel(j)) {
+                                    Console.Write($"Generating pixel for frame {i} pixel {j}.\r\n");
+                                    bool activated = (frame.GetPixel(j) == '#');
+
+                                    XmlNode setVariable = GenerateSetVariable(xmlDocument,
+                                                                              Variables.Player.xPos,
+                                                                              j,
+                                                                              activated);
+
+                                    if (previousBlock == null) {
+                                        actionsBlock.AppendChild(setVariable);
+                                    } else {
+                                        XmlNode nextBlock = GenerateNextBlock(xmlDocument);
+                                        previousBlock.AppendChild(nextBlock);
+                                        nextBlock.AppendChild(setVariable);
+                                    }
+                                    previousBlock = setVariable;
+                                }
+                            }
+
+                            XmlNode sleepSubroutineBlock = GenerateSubroutineInstanceBlock(xmlDocument, "Sleep"),
+                                    nextBlockForSleep = GenerateNextBlock(xmlDocument);
+                            previousBlock?.AppendChild(nextBlockForSleep);
+                            nextBlockForSleep.AppendChild(sleepSubroutineBlock);
+
+                            previousBlock = sleepSubroutineBlock;
+                        }
+                    }
                 }
             }
 
@@ -230,17 +261,139 @@ namespace ConsoleVideo {
                 Async = false,
                 CheckCharacters = true,
                 CloseOutput = true,
-                ConformanceLevel = ConformanceLevel.Document,
+                ConformanceLevel = ConformanceLevel.Auto,
                 DoNotEscapeUriAttributes = true,
                 Encoding = Encoding.UTF8,
                 Indent = true,
                 IndentChars = "    ",
-                NamespaceHandling = NamespaceHandling.Default,
+                NamespaceHandling = NamespaceHandling.OmitDuplicates,
                 NewLineChars = "\r\n"
             };
-            XmlWriter xmlWriter = XmlWriter.Create(filePath, xmlWriterSettings);
+            using XmlWriter xmlWriter = XmlWriter.Create(filePath, xmlWriterSettings);
             xmlDocument.Save(xmlWriter);
+
+            xmlWriter.Close();
+            xmlWriter.Dispose();
             return;
+        }
+
+        private static XmlNode GenerateNextBlock(XmlDocument xmlDocument) => xmlDocument.CreateElement("next");
+
+        private static XmlNode GenerateGetVariable(XmlDocument xmlDocument,
+                                                   Variable variable,
+                                                   XmlNode objectInstance = null) {
+            //GetVariable.
+            XmlNode getVariable = xmlDocument.CreateElement("block");
+
+            {
+                //GetVariable.type.
+                XmlAttribute getVariableName = xmlDocument.CreateAttribute("type");
+                getVariableName.Value = "GetVariable";
+                getVariable.Attributes?.Append(getVariableName);
+            }
+
+            {
+                //GetVariable first parameter.
+                XmlNode getVariableFirstParameter = xmlDocument.CreateElement("value");
+                getVariable.AppendChild(getVariableFirstParameter);
+
+                {
+                    //GetVariable first parameter.name.
+                    XmlAttribute getVariableFirstParameterName = xmlDocument.CreateAttribute("name");
+                    getVariableFirstParameterName.Value = "VALUE-0";
+                    getVariableFirstParameter.Attributes?.Append(getVariableFirstParameterName);
+                }
+
+                {
+                    VariableReferenceBlock variableReferenceBlock = new(xmlDocument, variable, objectInstance);
+                    getVariableFirstParameter.AppendChild(variableReferenceBlock.GeneratedVariableReferenceBlock);
+                }
+            }
+
+            return getVariable;
+        }
+
+        private static XmlNode GenerateValueInArray(XmlDocument xmlDocument,
+                                                    Variable variable,
+                                                    XmlNode objectInstance,
+                                                    int index) {
+            //ValueInArray.
+            XmlNode valueInArray = xmlDocument.CreateElement("block");
+
+            {
+                //ValueInArray.type.
+                XmlAttribute valueInArrayType = xmlDocument.CreateAttribute("type");
+                valueInArrayType.Value = "ValueInArray";
+                valueInArray.Attributes?.Append(valueInArrayType);
+            }
+
+            {
+                //ValueInArray first parameter.
+                XmlNode valueInArrayFirstParameter = xmlDocument.CreateElement("value");
+                valueInArray.AppendChild(valueInArrayFirstParameter);
+
+                {
+                    //ValueInArray first parameter.name.
+                    XmlAttribute valueInArrayFirstParameterName = xmlDocument.CreateAttribute("name");
+                    valueInArrayFirstParameterName.Value = "VALUE-0";
+                    valueInArrayFirstParameter.Attributes?.Append(valueInArrayFirstParameterName);
+                }
+
+                {
+                    XmlNode parameterContent = GenerateGetVariable(xmlDocument,
+                                                                   variable,
+                                                                   objectInstance);
+                    valueInArrayFirstParameter.AppendChild(parameterContent);
+                }
+            }
+
+            {
+                //ValueInArray second parameter.
+                XmlNode valueInArraySecondParameter = xmlDocument.CreateElement("value");
+                valueInArray.AppendChild(valueInArraySecondParameter);
+
+                {
+                    //ValueInArray second parameter.name.
+                    XmlAttribute valueInArraySecondParameterName = xmlDocument.CreateAttribute("name");
+                    valueInArraySecondParameterName.Value = "VALUE-1";
+                    valueInArraySecondParameter.Attributes?.Append(valueInArraySecondParameterName);
+                }
+
+                {
+                    XmlNode parameterContent = GenerateNumberLiteral(xmlDocument, index);
+                    valueInArraySecondParameter.AppendChild(parameterContent);
+                }
+            }
+
+            return valueInArray;
+        }
+
+        private static XmlNode GenerateNumberLiteral(XmlDocument xmlDocument, int number) {
+            //NumberLiteral.
+            XmlNode numberLiteral = xmlDocument.CreateElement("block");
+
+            {
+                //NumberLiteral.type.
+                XmlAttribute numberLiteralType = xmlDocument.CreateAttribute("type");
+                numberLiteralType.Value = "Number";
+                numberLiteral.Attributes?.Append(numberLiteralType);
+            }
+
+            {
+                //NumberLiteral.num.
+                XmlNode numberLiteralNum = xmlDocument.CreateElement("field");
+                numberLiteralNum.InnerText = number.ToString();
+                numberLiteral.AppendChild(numberLiteralNum);
+
+                {
+                    //NumberLiteral.num.name.
+                    XmlAttribute numberLiteralNumName = xmlDocument.CreateAttribute("name");
+                    numberLiteralNumName.Value = "NUM";
+                    numberLiteralNum.Attributes?.Append(numberLiteralNumName);
+                }
+            }
+
+            return numberLiteral;
         }
 
         private static XmlNode GenerateSetVariable(XmlDocument xmlDocument,
@@ -269,81 +422,95 @@ namespace ConsoleVideo {
                     setVariableFirstParameter.Attributes?.Append(setVariableFirstParameterName);
                 }
 
-                setVariableFirstParameter.AppendChild(GenerateVariableReference(xmlDocument,
-                                                                                Variables.Player.xPos,
-                                                                                null));
+                {
+                    XmlNode valueInArray = GenerateValueInArray(xmlDocument,
+                                                                Variables.Global.bots,
+                                                                null,
+                                                                botsIndex);
+
+                    VariableReferenceBlock variableReferenceBlock = new(xmlDocument, variable, valueInArray);
+                    setVariableFirstParameter.AppendChild(variableReferenceBlock.GeneratedVariableReferenceBlock);
+                }
+            }
+
+            {
+                //SetVariable second parameter.
+                XmlNode setVariableSecondParameter = xmlDocument.CreateElement("value");
+                setVariable.AppendChild(setVariableSecondParameter);
+
+                {
+                    //SetVariable second parameter.name.
+                    XmlAttribute setVariableSecondParameterName = xmlDocument.CreateAttribute("name");
+                    setVariableSecondParameterName.Value = "VALUE-1";
+                    setVariableSecondParameter.Attributes?.Append(setVariableSecondParameterName);
+                }
+
+                {
+                    /*
+                        Activated = white.
+                        White = 0.
+                        Black = original position.
+                    */
+                    XmlNode parameterContent;
+                    if (pixelActivated == true) {
+                        parameterContent = GenerateNumberLiteral(xmlDocument, 0);
+                    } else {
+                        parameterContent = GenerateGetVariable(xmlDocument,
+                                                               Variables.Player.originalXPos,
+                                                               GenerateValueInArray(xmlDocument,
+                                                                                    Variables.Global.bots,
+                                                                                    null,
+                                                                                    botsIndex)
+                                                              );
+                    }
+
+                    setVariableSecondParameter.AppendChild(parameterContent);
+                }
             }
 
             return setVariable;
         }
 
-        private static XmlNode GenerateVariableReference(XmlDocument xmlDocument,
-                                                         Variable variable,
-                                                         XmlNode objectInstance) {
-            //VariableReferenceBlock
-            XmlNode variableReferenceBlock = xmlDocument.CreateElement("block");
+        private static XmlNode GenerateEventPlayer(XmlDocument xmlDocument) {
+            //EventPlayer.
+            XmlNode eventPlayerBlock = xmlDocument.CreateElement("block");
 
             {
-                //VariableReferenceBlock.type.
-                XmlAttribute variableReferenceBlockType = xmlDocument.CreateAttribute("type");
-                variableReferenceBlockType.Value = "variableReferenceBlock";
-                variableReferenceBlock.Attributes?.Append(variableReferenceBlockType);
+                //EventPlayer.type.
+                XmlAttribute eventPlayerType = xmlDocument.CreateAttribute("type");
+                eventPlayerType.Value = "EventPlayer";
+                eventPlayerBlock.Attributes?.Append(eventPlayerType);
             }
 
-            bool isObjectVar = (variable.VariableType != VariableType.Global);
+            return eventPlayerBlock;
+        }
+
+        private static XmlNode GenerateSubroutineInstanceBlock(XmlDocument xmlDocument, string subroutineName) {
+            //SubroutineInstanceBlock.
+            XmlNode subroutineInstanceBlock = xmlDocument.CreateElement("block");
+
             {
-                //VariableReferenceBlock.mutation
-                XmlNode variableReferenceBlockMutation = xmlDocument.CreateElement("mutation");
-                variableReferenceBlock.AppendChild(variableReferenceBlockMutation);
+                //SubroutineInstanceBlock.type.
+                XmlAttribute subroutineInstanceBlockType = xmlDocument.CreateAttribute("type");
+                subroutineInstanceBlockType.Value = "subroutineInstanceBlock";
+                subroutineInstanceBlock.Attributes?.Append(subroutineInstanceBlockType);
+            }
+
+            {
+                //SubroutineInstanceBlock.subroutineName.
+                XmlNode subroutineInstanceBlockSubroutineName = xmlDocument.CreateElement("field");
+                subroutineInstanceBlockSubroutineName.InnerText = subroutineName;
+                subroutineInstanceBlock.AppendChild(subroutineInstanceBlockSubroutineName);
 
                 {
-                    //VariableReferenceBlock.mutation.isObjectVar
-                    XmlAttribute variableReferenceBlockBlockMutationIsObjectVar = xmlDocument.CreateAttribute("isObjectVar");
-                    variableReferenceBlockBlockMutationIsObjectVar.Value = isObjectVar.ToString()
-                                                                                      .ToLower();
-                    variableReferenceBlockMutation.Attributes?.Append(variableReferenceBlockBlockMutationIsObjectVar);
+                    //SubroutineInstanceBlock.subroutineName.name.
+                    XmlAttribute subroutineInstanceBlockSubroutineNameName = xmlDocument.CreateAttribute("name");
+                    subroutineInstanceBlockSubroutineNameName.Value = "SUBROUTINE_NAME";
+                    subroutineInstanceBlockSubroutineName.Attributes?.Append(subroutineInstanceBlockSubroutineNameName);
                 }
             }
 
-            {
-                //VariableReferenceBlock.objectType.
-                XmlNode variableReferenceBlockObjectType = xmlDocument.CreateElement("field");
-                variableReferenceBlockObjectType.InnerText = variable.VariableType.ToString();
-                variableReferenceBlock.AppendChild(variableReferenceBlockObjectType);
-
-                {
-                    //VariableReferenceBlock.objectType.name.
-                    XmlAttribute variableReferenceBlockObjectTypeName = xmlDocument.CreateAttribute("name");
-                    variableReferenceBlockObjectTypeName.Value = "OBJECTTYPE";
-                    variableReferenceBlockObjectType.Attributes?.Append(variableReferenceBlockObjectTypeName);
-                }
-            }
-
-            {
-                //VariableReferenceBlock.var.
-                XmlNode variableReferenceBlockVar = xmlDocument.CreateElement("field");
-                variableReferenceBlockVar.InnerText = variable.Name;
-                variableReferenceBlock.AppendChild(variableReferenceBlockVar);
-
-                {
-                    //VariableReferenceBlock.var.name.
-                    XmlAttribute variableReferenceBlockVarName = xmlDocument.CreateAttribute("name");
-                    variableReferenceBlockVarName.Value = "VAR";
-                    variableReferenceBlockVar.Attributes?.Append(variableReferenceBlockVarName);
-
-                    //VariableReferenceBlock.var.id.
-                    XmlAttribute variableReferenceBlockVarId = xmlDocument.CreateAttribute("id");
-                    variableReferenceBlockVarId.Value = variable.Id;
-                    variableReferenceBlockVar.Attributes?.Append(variableReferenceBlockVarId);
-
-                    //VariableReferenceBlock.var.variableType.
-                    XmlAttribute variableReferenceBlockVarVariableType = xmlDocument.CreateAttribute("variableType");
-                    variableReferenceBlockVarVariableType.Value = variable.VariableType.ToString();
-                    variableReferenceBlockVar.Attributes?.Append(variableReferenceBlockVarVariableType);
-                }
-            }
-
-            return variableReferenceBlock;
+            return subroutineInstanceBlock;
         }
     }
 }

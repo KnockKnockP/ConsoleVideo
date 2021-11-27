@@ -18,8 +18,8 @@ namespace ConsoleVideo.Media {
             return;
         }
 
-        public IFrame Convert(Image<Rgb24> image) {
-            IFrame frame = new CharFrame(windowSize);
+        public IFrame<char> Convert(Image<Rgb24> image) {
+            IFrame<char> frame = new CharFrame(windowSize);
             Parallel.For(0,
                          windowSize.y,
                          (int y, ParallelLoopState _) => {
