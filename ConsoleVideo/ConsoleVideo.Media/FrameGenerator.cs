@@ -14,7 +14,8 @@ namespace ConsoleVideo.Media {
 
         public FrameGenerator(Vector2Int _windowSize,
                               int _imageWidth,
-                              int _imageHeight, bool _inverted) {
+                              int _imageHeight,
+                              bool _inverted) {
             windowSize = _windowSize;
             (widthScale, heightScale) = (((float)(_imageWidth) / windowSize.x), ((float)(_imageHeight) / windowSize.y));
             inverted = _inverted;
@@ -33,7 +34,7 @@ namespace ConsoleVideo.Media {
 
                                  Rgb24 color = image[xArray, yArray];
                                  byte average = (byte)((color.R + color.G + color.B) / 3);
-                                 
+
                                  //activated = '#'
                                  bool activated = (average != 0);
                                  if (inverted) {

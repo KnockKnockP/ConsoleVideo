@@ -73,7 +73,8 @@ namespace ConsoleVideo {
             }
 
             {
-                if ((!isObjectVar) || (objectInstance == null)) {
+                if ((!isObjectVar) ||
+                    (objectInstance == null)) {
                     return;
                 }
 

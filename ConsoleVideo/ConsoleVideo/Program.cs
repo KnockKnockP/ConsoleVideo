@@ -26,11 +26,11 @@ namespace ConsoleVideo {
 
                 Console.Write("Execution done.\r\n" +
                               $"Exit code: {exitCode}.\r\n");
-                Console.ReadKey();
+                Console.ReadLine();
                 Environment.Exit((int)(exitCode));
             } catch (Exception exception) {
                 Console.Write($"{exception.Message}\r\n" + $"{exception.InnerException}\r\n" + $"{exception.StackTrace}");
-                Console.ReadKey();
+                Console.ReadLine();
             }
             return;
         }
@@ -39,9 +39,9 @@ namespace ConsoleVideo {
             InitializeFFmpeg(true);
             LoadVideo(out Video video);
 
-            IEnumerable<IFrame<char>> frames = GenerateFrames(size,
-                                                              video,
-                                                              video.resolution);
+            IList<IFrame<char>> frames = GenerateFrames(size,
+                                                        video,
+                                                        video.resolution);
 
             /*
                 We have about 80kb of space to work with.
@@ -50,21 +50,20 @@ namespace ConsoleVideo {
                 
                 Done list:
                     //First 100.
-                    0 ~ 9
             */
-            const int baseFrame = 0,
-                      startFrameInclusive = 10,
-                      endFrameExclusive = 11;
+            const int startFrameInclusive = 150,
+                      endFrameInclusive = 155;
+            CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
-            GenerateXml(frames.ToArray(),
+            GenerateXml(frames,
                         filePath,
                         baseFrame,
                         startFrameInclusive,
-                        endFrameExclusive);
-            PlayVideo(frames.ToArray(),
+                        endFrameInclusive);
+            PlayVideo(frames,
                       startFrameInclusive,
-                      endFrameExclusive);
+                      endFrameInclusive);
             return ExitCode.Success;
         }
 
@@ -89,6 +88,9 @@ namespace ConsoleVideo {
         }
 
         private static void LoadVideo(out Video video) {
+            //video = new Video(MediaFile.Open(@"D:\GitHub\ConsoleVideo\ConsoleVideo\ConsoleVideo\Resources\Videos\Shape Video.mp4"));
+            video = new Video(MediaFile.Open(@"D:\GitHub\ConsoleVideo\ConsoleVideo\ConsoleVideo\Resources\Videos\Original.mp4"));
+            return;
             video = null;
 
             using CommonOpenFileDialog commonOpenFileDialog = new("Select a video to play.");
@@ -105,25 +107,15 @@ namespace ConsoleVideo {
             return;
         }
 
-        private static IEnumerable<IFrame<char>> GenerateFrames(Vector2Int windowSize,
-                                                                Video video,
-                                                                Vector2Int videoSize) {
+        private static IList<IFrame<char>> GenerateFrames(Vector2Int windowSize,
+                                                          Video video,
+                                                          Vector2Int videoSize) {
             FrameGenerator frameGenerator = new(windowSize,
                                                 video.resolution.x,
                                                 video.resolution.y,
                                                 inverted);
 
             IList<IFrame<char>> frames = new List<IFrame<char>>();
-            frames.Add(new CharFrame(videoSize));
-            for (int i = 0; i < (videoSize.x * videoSize.y); ++i) {
-                char deactivatedChar = ' ';
-                if (inverted) {
-                    deactivatedChar = '#';
-                }
-
-                frames[0]
-                    .SetPixel(i, deactivatedChar);
-            }
 
             int totalFrameCount = 0,
                 frameCount = 0;
@@ -147,21 +139,32 @@ namespace ConsoleVideo {
             }
             video.mediaFile.Dispose();
             Console.Write("\r\n");
-            return frames.ToArray();
+            
+            frames.Add(new CharFrame(videoSize));
+            for (int i = 0; i < (videoSize.x * videoSize.y); ++i) {
+                char deactivatedChar = ' ';
+                if (inverted) {
+                    deactivatedChar = '#';
+                }
+
+                frames[(frames.Count - 1)]
+                    .SetPixel(i, deactivatedChar);
+            }
+            return frames;
         }
 
         private static void PlayVideo(IList<IFrame<char>> frames,
                                       int startFrameInclusive,
-                                      int endFrameExclusive) {
-            Console.ReadKey();
+                                      int endFrameInclusive) {
+            Console.ReadLine();
             Console.Clear();
 
-            double sleepTime = 1000d,
-                   previousMilliseconds = sleepTime;
-            Stopwatch stopwatch = new();
-            for (int i = startFrameInclusive; i < endFrameExclusive; ++i) {
+            //double sleepTime = 1000d,
+            //       previousMilliseconds = sleepTime;
+            //Stopwatch stopwatch = new();
+            for (int i = startFrameInclusive; i <= endFrameInclusive; ++i) {
                 IFrame<char> frame = frames[i];
-                stopwatch.Restart();
+                //stopwatch.Restart();
 
                 Console.SetCursorPosition(0, 0);
                 for (int y = 0; y < size.x; ++y) {
@@ -179,6 +182,8 @@ namespace ConsoleVideo {
                 FastConsole.Write(i.ToString());
                 FastConsole.Flush();
 
+                Console.ReadLine();
+                /*
                 while (true) {
                     double milliseconds = stopwatch.Elapsed.TotalMilliseconds;
                     bool condition = (milliseconds >= (sleepTime + (sleepTime - previousMilliseconds)));
@@ -187,15 +192,17 @@ namespace ConsoleVideo {
                         break;
                     }
                 }
+                */
             }
             return;
         }
 
+        #region Xml Generation.
         private static void GenerateXml(IList<IFrame<char>> frames,
                                         string filePath,
-                                        int baseFrame,
+                                        CharFrame baseFrame,
                                         int startFrameInclusive,
-                                        int endFrameExclusive) {
+                                        int endFrameInclusive) {
             XmlDocument xmlDocument = new();
 
             {
@@ -252,21 +259,14 @@ namespace ConsoleVideo {
                     {
                         XmlNode previousBlock = null;
 
-                        /*
-                            TODO: Trying to save a lot of blocks at once may lag the server.
-                            Every time I tried to save 100 frames worth of blocks, it crashed it for everyone.
-                            It might be just a coincidence but it happened 3 times...
-                            Max 1000 blocks is my personal limit.
-                            Use this power wisely.
-                        */
-                        for (int i = startFrameInclusive; i < endFrameExclusive; ++i) {
-                            CharFrame frame = (CharFrame)(frames[(i + 1)]);
+                        for (int i = startFrameInclusive; i <= endFrameInclusive; ++i) {
+                            CharFrame frame = (CharFrame)(frames[i]);
 
                             CharFrame previousFrame;
-                            if (baseFrame < 0) {
-                                previousFrame = (CharFrame)(frames[i]);
+                            if (i == startFrameInclusive) {
+                                previousFrame = baseFrame;
                             } else {
-                                previousFrame = (CharFrame)(frames[baseFrame]);
+                                previousFrame = (CharFrame)(frames[(i - 1)]);
                             }
                             for (int j = 0; j < (frame.Size.x * frame.Size.y); ++j) {
                                 if (frame.GetPixel(j) != previousFrame.GetPixel(j)) {
@@ -297,6 +297,11 @@ namespace ConsoleVideo {
 
                             previousBlock = sleepSubroutineBlock;
                         }
+                        XmlNode sleepBlocker = GenerateClearAllCustomMessages(xmlDocument),
+                                sleepBlockerNext = GenerateNextBlock(xmlDocument);
+
+                        previousBlock?.AppendChild(sleepBlockerNext);
+                        sleepBlockerNext.AppendChild(sleepBlocker);
                     }
                 }
             }
@@ -323,7 +328,24 @@ namespace ConsoleVideo {
 
             xmlWriter.Close();
             xmlWriter.Dispose();
+
+            FileInfo fileInfo = new(filePath);
+            Console.Write($"File size: {(fileInfo.Length * 0.001)} kilobytes.\r\n");
             return;
+        }
+        
+        private static XmlNode GenerateClearAllCustomMessages(XmlDocument xmlDocument) {
+            //ClearAllCustomMessages.
+            XmlNode clearAllCustomMessages = xmlDocument.CreateElement("block");
+
+            {
+                //ClearAllCustomMessages.type.
+                XmlAttribute clearAllCustomMessagesType = xmlDocument.CreateAttribute("type");
+                clearAllCustomMessagesType.Value = "ClearAllCustomNotificationMessages";
+                clearAllCustomMessages.Attributes?.Append(clearAllCustomMessagesType);
+            }
+
+            return clearAllCustomMessages;
         }
 
         private static XmlNode GenerateNextBlock(XmlDocument xmlDocument) => xmlDocument.CreateElement("next");
@@ -547,5 +569,6 @@ namespace ConsoleVideo {
 
             return subroutineInstanceBlock;
         }
+        #endregion
     }
 }
