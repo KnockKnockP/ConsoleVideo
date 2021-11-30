@@ -10,11 +10,14 @@ namespace ConsoleVideo.Media {
         private readonly float widthScale,
                                heightScale;
 
+        private readonly bool inverted;
+
         public FrameGenerator(Vector2Int _windowSize,
                               int _imageWidth,
-                              int _imageHeight) {
+                              int _imageHeight, bool _inverted) {
             windowSize = _windowSize;
             (widthScale, heightScale) = (((float)(_imageWidth) / windowSize.x), ((float)(_imageHeight) / windowSize.y));
+            inverted = _inverted;
             return;
         }
 
@@ -30,9 +33,15 @@ namespace ConsoleVideo.Media {
 
                                  Rgb24 color = image[xArray, yArray];
                                  byte average = (byte)((color.R + color.G + color.B) / 3);
+                                 
+                                 //activated = '#'
+                                 bool activated = (average != 0);
+                                 if (inverted) {
+                                     activated = !activated;
+                                 }
 
                                  char pixel = '#';
-                                 if (average == 0) {
+                                 if (!activated) {
                                      pixel = ' ';
                                  }
 

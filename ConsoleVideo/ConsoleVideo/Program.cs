@@ -10,13 +10,15 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
 
 namespace ConsoleVideo {
     internal static class Program {
-        private static readonly Vector2Int Size = new(7, 7);
+        private static readonly Vector2Int size = new(7, 7);
+        private const bool inverted = true;
 
         private static void Main() {
             try {
@@ -37,14 +39,32 @@ namespace ConsoleVideo {
             InitializeFFmpeg(true);
             LoadVideo(out Video video);
 
-            IEnumerable<IFrame<char>> frames = GenerateFrames(Size,
+            IEnumerable<IFrame<char>> frames = GenerateFrames(size,
                                                               video,
                                                               video.resolution);
 
-            const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
-            GenerateXml(frames.ToArray(), filePath);
+            /*
+                We have about 80kb of space to work with.
+             
+                Total frames: 219.
+                
+                Done list:
+                    //First 100.
+                    0 ~ 9
+            */
+            const int baseFrame = 0,
+                      startFrameInclusive = 10,
+                      endFrameExclusive = 11;
 
-            PlayVideo(frames.ToArray());
+            const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
+            GenerateXml(frames.ToArray(),
+                        filePath,
+                        baseFrame,
+                        startFrameInclusive,
+                        endFrameExclusive);
+            PlayVideo(frames.ToArray(),
+                      startFrameInclusive,
+                      endFrameExclusive);
             return ExitCode.Success;
         }
 
@@ -90,13 +110,19 @@ namespace ConsoleVideo {
                                                                 Vector2Int videoSize) {
             FrameGenerator frameGenerator = new(windowSize,
                                                 video.resolution.x,
-                                                video.resolution.y);
+                                                video.resolution.y,
+                                                inverted);
 
             IList<IFrame<char>> frames = new List<IFrame<char>>();
             frames.Add(new CharFrame(videoSize));
             for (int i = 0; i < (videoSize.x * videoSize.y); ++i) {
+                char deactivatedChar = ' ';
+                if (inverted) {
+                    deactivatedChar = '#';
+                }
+
                 frames[0]
-                    .SetPixel(i, ' ');
+                    .SetPixel(i, deactivatedChar);
             }
 
             int totalFrameCount = 0,
@@ -124,22 +150,22 @@ namespace ConsoleVideo {
             return frames.ToArray();
         }
 
-        private static void PlayVideo(IList<IFrame<char>> frames) {
+        private static void PlayVideo(IList<IFrame<char>> frames,
+                                      int startFrameInclusive,
+                                      int endFrameExclusive) {
             Console.ReadKey();
             Console.Clear();
-
-            bool stable = false;
 
             double sleepTime = 1000d,
                    previousMilliseconds = sleepTime;
             Stopwatch stopwatch = new();
-            for (int i = 1; i < frames.Count; i++) {
+            for (int i = startFrameInclusive; i < endFrameExclusive; ++i) {
                 IFrame<char> frame = frames[i];
                 stopwatch.Restart();
 
                 Console.SetCursorPosition(0, 0);
-                for (int y = 0; y < Size.x; ++y) {
-                    for (int x = 0; x < Size.y; ++x) {
+                for (int y = 0; y < size.x; ++y) {
+                    for (int x = 0; x < size.y; ++x) {
                         char charToWrite = frame.GetPixel(y, x);
                         if (charToWrite == ' ') {
                             charToWrite = '.';
@@ -150,12 +176,12 @@ namespace ConsoleVideo {
                     }
                     FastConsole.Write("\r\n");
                 }
-                FastConsole.Write((i - 1).ToString());
+                FastConsole.Write(i.ToString());
                 FastConsole.Flush();
 
                 while (true) {
                     double milliseconds = stopwatch.Elapsed.TotalMilliseconds;
-                    bool condition = ((stable == true) ? (milliseconds >= sleepTime) : (milliseconds >= (sleepTime + (sleepTime - previousMilliseconds))));
+                    bool condition = (milliseconds >= (sleepTime + (sleepTime - previousMilliseconds)));
                     if (condition == true) {
                         previousMilliseconds = milliseconds;
                         break;
@@ -165,7 +191,11 @@ namespace ConsoleVideo {
             return;
         }
 
-        private static void GenerateXml(IList<IFrame<char>> frames, string filePath) {
+        private static void GenerateXml(IList<IFrame<char>> frames,
+                                        string filePath,
+                                        int baseFrame,
+                                        int startFrameInclusive,
+                                        int endFrameExclusive) {
             XmlDocument xmlDocument = new();
 
             {
@@ -222,12 +252,26 @@ namespace ConsoleVideo {
                     {
                         XmlNode previousBlock = null;
 
-                        for (int i = 1; i < frames.Count; ++i) {
-                            CharFrame frame = (CharFrame)(frames[i]),
-                                      previousFrame = (CharFrame)(frames[(i - 1)]);
+                        /*
+                            TODO: Trying to save a lot of blocks at once may lag the server.
+                            Every time I tried to save 100 frames worth of blocks, it crashed it for everyone.
+                            It might be just a coincidence but it happened 3 times...
+                            Max 1000 blocks is my personal limit.
+                            Use this power wisely.
+                        */
+                        for (int i = startFrameInclusive; i < endFrameExclusive; ++i) {
+                            CharFrame frame = (CharFrame)(frames[(i + 1)]);
+
+                            CharFrame previousFrame;
+                            if (baseFrame < 0) {
+                                previousFrame = (CharFrame)(frames[i]);
+                            } else {
+                                previousFrame = (CharFrame)(frames[baseFrame]);
+                            }
                             for (int j = 0; j < (frame.Size.x * frame.Size.y); ++j) {
                                 if (frame.GetPixel(j) != previousFrame.GetPixel(j)) {
                                     Console.Write($"Generating pixel for frame {i} pixel {j}.\r\n");
+
                                     bool activated = (frame.GetPixel(j) == '#');
 
                                     XmlNode setVariable = GenerateSetVariable(xmlDocument,
@@ -257,6 +301,10 @@ namespace ConsoleVideo {
                 }
             }
 
+            if (File.Exists(filePath)) {
+                File.Delete(filePath);
+            }
+
             XmlWriterSettings xmlWriterSettings = new() {
                 Async = false,
                 CheckCharacters = true,
@@ -264,11 +312,12 @@ namespace ConsoleVideo {
                 ConformanceLevel = ConformanceLevel.Auto,
                 DoNotEscapeUriAttributes = true,
                 Encoding = Encoding.UTF8,
-                Indent = true,
-                IndentChars = "    ",
+                Indent = false,
+                IndentChars = "",
                 NamespaceHandling = NamespaceHandling.OmitDuplicates,
-                NewLineChars = "\r\n"
+                NewLineChars = "\n"
             };
+
             using XmlWriter xmlWriter = XmlWriter.Create(filePath, xmlWriterSettings);
             xmlDocument.Save(xmlWriter);
 
@@ -469,20 +518,6 @@ namespace ConsoleVideo {
             }
 
             return setVariable;
-        }
-
-        private static XmlNode GenerateEventPlayer(XmlDocument xmlDocument) {
-            //EventPlayer.
-            XmlNode eventPlayerBlock = xmlDocument.CreateElement("block");
-
-            {
-                //EventPlayer.type.
-                XmlAttribute eventPlayerType = xmlDocument.CreateAttribute("type");
-                eventPlayerType.Value = "EventPlayer";
-                eventPlayerBlock.Attributes?.Append(eventPlayerType);
-            }
-
-            return eventPlayerBlock;
         }
 
         private static XmlNode GenerateSubroutineInstanceBlock(XmlDocument xmlDocument, string subroutineName) {
