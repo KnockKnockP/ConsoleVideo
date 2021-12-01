@@ -44,15 +44,21 @@ namespace ConsoleVideo {
                                                         video.resolution);
 
             /*
-                We have about 80kb of space to work with.
+                We have about 100kb of space to work with.
              
                 Total frames: 219.
                 
                 Done list:
                     //First 100.
+                    0 ~ 10. Done.
+                    11 ~ 15. Done.
+                    16 ~ 21. Done.
+                    22 ~ 27. Done.
+                    28 ~ 35. Done.
+                    36 ~ 40. Done.
             */
-            const int startFrameInclusive = 150,
-                      endFrameInclusive = 155;
+            const int startFrameInclusive = 36,
+                      endFrameInclusive = 40;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
