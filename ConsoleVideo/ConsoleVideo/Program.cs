@@ -48,17 +48,25 @@ namespace ConsoleVideo {
              
                 Total frames: 219.
                 
-                Done list:
-                    //First 100.
-                    0 ~ 10. Done.
-                    11 ~ 15. Done.
-                    16 ~ 21. Done.
-                    22 ~ 27. Done.
-                    28 ~ 35. Done.
-                    36 ~ 40. Done.
+                List of frames that I have recorded:
+                    0 ~ 60. Done.
+                    61 ~ 100. Done.
+                    101 ~ 150. Done.
+                    151 ~ 195. Done.
+                    196 ~ 227. Done.
+                    228 ~ 290. Done.
+                    291 ~ 330. Done.
+                    331 ~ 350. Done.
+                    351 ~ 360. Done.
+                    361 ~ 400. Done.
+                    401 ~ 440. Done.
+                    441 ~ 444. Done.
+                    445 ~ 465. Done.
+                    467 ~ 480. Done.
+                    481 ~ 515. Done.
             */
-            const int startFrameInclusive = 36,
-                      endFrameInclusive = 40;
+            const int startFrameInclusive = 481,
+                      endFrameInclusive = 515;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
@@ -123,25 +131,15 @@ namespace ConsoleVideo {
 
             IList<IFrame<char>> frames = new List<IFrame<char>>();
 
-            int totalFrameCount = 0,
-                frameCount = 0;
+            int totalFrameCount = 0;
             while (video.mediaFile.Video.TryGetNextFrame(out ImageData imageData) == true) {
-                ++frameCount;
-                switch (frameCount) {
-                    case 1: {
-                        using (Image<Rgb24> image = Image.LoadPixelData<Rgb24>(imageData.Data,
-                                                                               videoSize.x,
-                                                                               videoSize.y)) {
-                            frames.Add(frameGenerator.Convert(image));
-                            image.Dispose();
-                        }
-                        Console.Write($"\r{++totalFrameCount} frames converted to convertable format.");
-                        break;
-                    }
-                    case 30:
-                        frameCount = 0;
-                        break;
+                using (Image<Rgb24> image = Image.LoadPixelData<Rgb24>(imageData.Data,
+                                                                       videoSize.x,
+                                                                       videoSize.y)) {
+                    frames.Add(frameGenerator.Convert(image));
+                    image.Dispose();
                 }
+                Console.Write($"\r{++totalFrameCount} frames converted to convertable format.");
             }
             video.mediaFile.Dispose();
             Console.Write("\r\n");
