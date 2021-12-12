@@ -9,6 +9,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml;
@@ -33,6 +34,7 @@ namespace ConsoleVideo {
             return;
         }
 
+        [SuppressMessage("ReSharper.DPA", "DPA0003: Excessive memory allocations in LOH")]
         private static ExitCode Run() {
             InitializeFFmpeg(true);
             LoadVideo(out Video video);
@@ -59,18 +61,49 @@ namespace ConsoleVideo {
                     441 ~ 450. Done.
                     451 ~ 465. Done.
                     466 ~ 480. Done.
-                    481 ~ 520.
+                    481 ~ 520. Done.
+                    521 ~ 540. Done.
+                    541 ~ 580. Done.
+                    581 ~ 640. Done.
+                    641 ~ 655. Done.
+                    656 ~ 700. Done.
+                    701 ~ 760. Done.
+                    761 ~ 810. Done.
+                    811 ~ 870. Done.
+                    871 ~ 900. Done.
+                    901 ~ 950. Done.
+                    951 ~ 1000. Done.
+                    
+                    1001 ~ 1050. Done.
+                    1051 ~ 1070. Done.
+                    1071 ~ 1090. Done.
+                    1091 ~ 1110. Done.
+                    1111 ~ 1150. Done.
+                    1151 ~ 1190. Done.
+                    1191 ~ 1223. Done.
+                    1224 ~ 1250. Done.
+                    1251 ~ 1275. Done.
+                    1276 ~ 1330. Done.
+                    1331 ~ 1365. Done.
+                    1366 ~ 1430. Done.
+                    1431 ~ 1475. Done.
+                    1476 ~ 1510. Done.
+                    1511 ~ 1517. Done.
+                    1518 ~ 1530. Done.
+                    1531 ~ 1560. Done.
+                    1561 ~ 1585. Done.
+                    1586 ~ 1620. Done.
+                    1621 ~ 1650. Done.
+                    1651 ~ 1684.
             */
-            const int startFrameInclusive = 481,
-                      endFrameInclusive = 520;
+            const int startFrameInclusive = 1651;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
-            GenerateXml(frames,
+            int endFrameInclusive = GenerateXml(frames,
                         filePath,
                         baseFrame,
-                        startFrameInclusive,
-                        endFrameInclusive);
+                        startFrameInclusive);
             PlayVideo(frames,
                       startFrameInclusive,
                       endFrameInclusive);
@@ -166,12 +199,26 @@ namespace ConsoleVideo {
         }
 
         #region Xml Generation.
-        private static void GenerateXml(IList<IFrame<char>> frames,
+        private static int GenerateXml(IList<IFrame<char>> frames,
                                         string filePath,
                                         CharFrame baseFrame,
-                                        int startFrameInclusive,
-                                        int endFrameInclusive) {
+                                        int startFrameInclusive) {
+            XmlWriterSettings xmlWriterSettings = new() {
+                Async = false,
+                CheckCharacters = true,
+                CloseOutput = true,
+                ConformanceLevel = ConformanceLevel.Auto,
+                DoNotEscapeUriAttributes = true,
+                Encoding = Encoding.Default,
+                Indent = false,
+                IndentChars = "",
+                NamespaceHandling = NamespaceHandling.OmitDuplicates,
+                NewLineChars = "\n"
+            };
+            
             XmlDocument xmlDocument = new();
+
+            int returnI = 0;
 
             {
                 //Subroutine block.
@@ -224,10 +271,13 @@ namespace ConsoleVideo {
                         actionsBlock.Attributes?.Append(actionsName);
                     }
 
+
+                    using MemoryStream memoryStream = new();
+                    using XmlWriter xmlWriterMemory = XmlWriter.Create(memoryStream, xmlWriterSettings);
                     {
                         XmlNode previousBlock = null;
 
-                        for (int i = startFrameInclusive; i <= endFrameInclusive; ++i) {
+                        for (int i = startFrameInclusive; i < frames.Count; ++i) {
                             CharFrame frame = (CharFrame)(frames[i]);
 
                             CharFrame previousFrame;
@@ -261,6 +311,13 @@ namespace ConsoleVideo {
                             nextBlockForSleep.AppendChild(sleepSubroutineBlock);
 
                             previousBlock = sleepSubroutineBlock;
+
+                            memoryStream.SetLength(0);
+                            xmlDocument.WriteTo(xmlWriterMemory);
+                            if ((memoryStream.Length * 0.001) > 50) {
+                                returnI = i;
+                                break;
+                            }
                         }
                         XmlNode sleepBlocker = GenerateClearAllCustomMessages(xmlDocument),
                                 sleepBlockerNext = GenerateNextBlock(xmlDocument);
@@ -274,29 +331,16 @@ namespace ConsoleVideo {
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
             }
+            
+            using XmlWriter xmlWriterFile = XmlWriter.Create(filePath, xmlWriterSettings);
+            xmlDocument.Save(xmlWriterFile);
 
-            XmlWriterSettings xmlWriterSettings = new() {
-                Async = false,
-                CheckCharacters = true,
-                CloseOutput = true,
-                ConformanceLevel = ConformanceLevel.Auto,
-                DoNotEscapeUriAttributes = true,
-                Encoding = Encoding.UTF8,
-                Indent = false,
-                IndentChars = "",
-                NamespaceHandling = NamespaceHandling.OmitDuplicates,
-                NewLineChars = "\n"
-            };
-
-            using XmlWriter xmlWriter = XmlWriter.Create(filePath, xmlWriterSettings);
-            xmlDocument.Save(xmlWriter);
-
-            xmlWriter.Close();
-            xmlWriter.Dispose();
+            xmlWriterFile.Close();
+            xmlWriterFile.Dispose();
 
             FileInfo fileInfo = new(filePath);
             Console.Write($"File size: {(fileInfo.Length * 0.001)} kilobytes.\r\n");
-            return;
+            return returnI;
         }
 
         private static XmlNode GenerateSpotTargetBlock(XmlDocument xmlDocument, int botsIndex) {
