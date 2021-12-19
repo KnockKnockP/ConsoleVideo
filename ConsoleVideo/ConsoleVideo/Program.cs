@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Windows;
 using System.Xml;
 
 namespace ConsoleVideo {
@@ -19,6 +21,7 @@ namespace ConsoleVideo {
         private static readonly Vector2Int size = new(7, 7);
         private const bool inverted = false;
 
+        [STAThread]
         private static void Main() {
             try {
                 ExitCode exitCode = Run();
@@ -44,8 +47,6 @@ namespace ConsoleVideo {
                                                         video.resolution);
 
             /*
-                We have about 40kb (700 blocks) of space to work with.
-                
                 Total frame count: 6560 frames.
                 
                 List of frames that I have recorded:
@@ -94,16 +95,100 @@ namespace ConsoleVideo {
                     1561 ~ 1585. Done.
                     1586 ~ 1620. Done.
                     1621 ~ 1650. Done.
-                    1651 ~ 1684.
+                    1651 ~ 1684. Done.
+                    1685 ~ 1697. Done.
+                    1698 ~ 1718. Done.
+                    1719 ~ 1739. Done.
+                    1740 ~ 1779. Done.
+                    1800 ~ 1822. Done.
+                    1823 ~ 1842. Done.
+                    1843 ~ 1870. Done.
+                    1871 ~ 1887. Done.
+                    1888 ~ 1901. Done.
+                    1902 ~ 1913. Done.
+                    1914 ~ 1954. Done.
+                    1955 ~ 1995. Done.
+                    
+                    1996 ~ 2032. Done.
+                    2033 ~ 2062. Done.
+                    2063 ~ 2093. Done.
+                    2094 ~ 2162. Done.
+                    2163 ~ 2222. Done.
+                    2223 ~ 2246. Done.
+                    2247 ~ 2289. Done.
+                    2290 ~ 2327. Done.
+                    2328 ~ 2408. Done.
+                    2409 ~ 2480. Done.
+                    2481 ~ 2501. Done.
+                    2502 ~ 2545. Done.
+                    2546 ~ 2653. Done.
+                    2654 ~ 2722. Done.
+                    2723 ~ 2794. Done.
+                    2795 ~ 2814. Done.
+                    2815 ~ 2835. Done.
+                    2836 ~ 2870. Done.
+                    2871 ~ 2909. Done.
+                    2910 ~ 2933. Done.
+                    2934 ~ 2947. Done.
+                    2948 ~ 3028. Done.
+                    
+                    3029 ~ 3116. Done.
+                    3117 ~ 3175. Done.
+                    3176 ~ 3239. Done.
+                    3240 ~ 3273. Done.
+                    3274 ~ 3307. Done.
+                    3308 ~ 3376. Done.
+                    3377 ~ 3397. Done.
+                    3398 ~ 3412. Done.
+                    3413 ~ 3423. Done.
+                    3424 ~ 3440. Done.
+                    3441 ~ 3457. Done.
+                    3458 ~ 3467. Done.
+                    3468 ~ 3475. Done.
+                    3476 ~ 3492. Done.
+                    3493 ~ 3505. Done.
+                    3506 ~ 3513. Done.
+                    3514 ~ 3522. Done.
+                    3523 ~ 3534. Done.
+                    3535 ~ 3551. Done.
+                    3552 ~ 3571. Done.
+                    3572 ~ 3582. Done.
+                    3583 ~ 3598. Done.
+                    3599 ~ 3616. Done.
+                    3617 ~ 3625. Done.
+                    3626 ~ 3647. Done.
+                    3648 ~ 3656. Done.
+                    3657 ~ 3669. Done.
+                    3670 ~ 3677. Done.
+                    3678 ~ 3705. Done.
+                    3706 ~ 3748. Done.
+                    3749 ~ 3766. Done.
+                    3767 ~ 3804. Done.
+                    3805 ~ 3819. Done.
+                    3820 ~ 3845. Done.
+                    3846 ~ 3883. Done.
+                    3884 ~ 3917. Done.
+                    3918 ~ 3941. Done.
+                    3942 ~ 3960. Done.
+                    3961 ~ 3980. Done.
+                    3981 ~ 4011. Done.
+                    
+                    4012 ~ 
             */
-            const int startFrameInclusive = 1651;
+            const int startFrameInclusive = 4012;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
             int endFrameInclusive = GenerateXml(frames,
                         filePath,
                         baseFrame,
-                        startFrameInclusive);
+                        startFrameInclusive,
+                        40f);
+
+            Thread.Sleep(500);
+            string videoName = $"{startFrameInclusive} to {endFrameInclusive}.mp4";
+            Clipboard.SetText(videoName);
+            
             PlayVideo(frames,
                       startFrameInclusive,
                       endFrameInclusive);
@@ -202,7 +287,8 @@ namespace ConsoleVideo {
         private static int GenerateXml(IList<IFrame<char>> frames,
                                         string filePath,
                                         CharFrame baseFrame,
-                                        int startFrameInclusive) {
+                                        int startFrameInclusive,
+                                        float maxFileSize) {
             XmlWriterSettings xmlWriterSettings = new() {
                 Async = false,
                 CheckCharacters = true,
@@ -270,10 +356,7 @@ namespace ConsoleVideo {
                         actionsName.Value = "ACTIONS";
                         actionsBlock.Attributes?.Append(actionsName);
                     }
-
-
-                    using MemoryStream memoryStream = new();
-                    using XmlWriter xmlWriterMemory = XmlWriter.Create(memoryStream, xmlWriterSettings);
+                    
                     {
                         XmlNode previousBlock = null;
 
@@ -312,9 +395,10 @@ namespace ConsoleVideo {
 
                             previousBlock = sleepSubroutineBlock;
 
-                            memoryStream.SetLength(0);
+                            using MemoryStream memoryStream = new();
+                            using XmlWriter xmlWriterMemory = XmlWriter.Create(memoryStream, xmlWriterSettings);
                             xmlDocument.WriteTo(xmlWriterMemory);
-                            if ((memoryStream.Length * 0.001) > 50) {
+                            if ((memoryStream.Length * 0.001) > maxFileSize) {
                                 returnI = i;
                                 break;
                             }
@@ -340,6 +424,12 @@ namespace ConsoleVideo {
 
             FileInfo fileInfo = new(filePath);
             Console.Write($"File size: {(fileInfo.Length * 0.001)} kilobytes.\r\n");
+
+            using StreamReader streamReader = new(File.Open(filePath, FileMode.Open));
+            Clipboard.SetText(streamReader.ReadToEnd());
+            streamReader.Close();
+            streamReader.Dispose();
+            
             return returnI;
         }
 
