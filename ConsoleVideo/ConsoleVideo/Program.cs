@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -36,8 +37,9 @@ namespace ConsoleVideo {
             }
             return;
         }
-
-        [SuppressMessage("ReSharper.DPA", "DPA0003: Excessive memory allocations in LOH")]
+        
+        [SuppressMessage("ReSharper.DPA", "DPA0003: Excessive memory allocations in LOH",
+                         MessageId = "type: System.Byte[]")]
         private static ExitCode Run() {
             InitializeFFmpeg(true);
             LoadVideo(out Video video);
@@ -173,9 +175,41 @@ namespace ConsoleVideo {
                     3961 ~ 3980. Done.
                     3981 ~ 4011. Done.
                     
-                    4012 ~ 
+                    4012 ~ 4052. Done.
+                    4053 ~ 4088. Done.
+                    4089 ~ 4142. Done.
+                    4143 ~ 4158. Done.
+                    4159 ~ 4184. Done.
+                    4185 ~ 4226. Done.
+                    4227 ~ 4246. Done.
+                    4247 ~ 4262. Done.
+                    4263 ~ 4311. Done.
+                    4312 ~ 4362. Done.
+                    4363 ~ 4388. Done.
+                    4389 ~ 4400. Done.
+                    4401 ~ 4420. Done.
+                    4421 ~ 4492. Done.
+                    4493 ~ 4544. Done.
+                    4545 ~ 4569. Done.
+                    4570 ~ 4595. Done.
+                    4596 ~ 4623. Done.
+                    4624 ~ 4665. Done.
+                    4666 ~ 4675. Done.
+                    4676 ~ 4690. Done.
+                    4691 ~ 4728. Done.
+                    4729 ~ 4766. Done.
+                    4767 ~ 4792. Done.
+                    4793 ~ 4841. Done.
+                    4842 ~ 4863. Done.
+                    4864 ~ 4887. Done.
+                    4888 ~ 4934. Done.
+                    4935 ~ 4970. Done.
+                    4971 ~ 5009. Done.
+                    
+                    5010 ~ 5028. Done.
+                    5029 ~ 5097.
             */
-            const int startFrameInclusive = 4012;
+            const int startFrameInclusive = 5029;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
@@ -183,7 +217,7 @@ namespace ConsoleVideo {
                         filePath,
                         baseFrame,
                         startFrameInclusive,
-                        40f);
+                        45f);
 
             Thread.Sleep(500);
             string videoName = $"{startFrameInclusive} to {endFrameInclusive}.mp4";
