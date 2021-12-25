@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -207,9 +206,42 @@ namespace ConsoleVideo {
                     4971 ~ 5009. Done.
                     
                     5010 ~ 5028. Done.
-                    5029 ~ 5097.
+                    5029 ~ 5055. Done.
+                    5056 ~ 5119. Done.
+                    5120 ~ 5162. Done.
+                    5163 ~ 5186. Done.
+                    5187 ~ 5209. Done.
+                    5210 ~ 5229. Done.
+                    5230 ~ 5268. Done.
+                    5269 ~ 5287. Done.
+                    5288 ~ 5304. Done.
+                    5305 ~ 5320. Done.
+                    5321 ~ 5336. Done.
+                    5337 ~ 5344. Done.
+                    5345 ~ 5355. Done.
+                    5356 ~ 5369. Done.
+                    5370 ~ 5398. Done.
+                    5399 ~ 5410. Done.
+                    5411 ~ 5430. Done.
+                    5431 ~ 5488. Done.
+                    5489 ~ 5516. Done.
+                    5517 ~ 5535. Done.
+                    5536 ~ 5554. Done.
+                    5555 ~ 5577. Done.
+                    5578 ~ 5608. Done.
+                    5609 ~ 5629. Done.
+                    5630 ~ 5660. Done.
+                    5561 ~ 5683. Done.
+                    5684 ~ 5706. Done.
+                    5707 ~ 5739. Done.
+                    5740 ~ 5776. Done.
+                    5777 ~ 5827. Done.
+                    5828 ~ 5858. Done.
+                    5859 ~ 5944. Done.
+                    5945 ~ 5961. Done.
+                    5962 ~ 6044. Done.
             */
-            const int startFrameInclusive = 5029;
+            const int startFrameInclusive = 6045;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
@@ -217,7 +249,7 @@ namespace ConsoleVideo {
                         filePath,
                         baseFrame,
                         startFrameInclusive,
-                        45f);
+                        40f);
 
             Thread.Sleep(500);
             string videoName = $"{startFrameInclusive} to {endFrameInclusive}.mp4";

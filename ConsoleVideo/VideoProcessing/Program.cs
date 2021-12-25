@@ -7,6 +7,7 @@ using FFMediaToolkit.Graphics;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Security;
 
 LoadFFmpeg();
 Video video = LoadVideo();
@@ -49,7 +50,7 @@ VideoEncoderSettings videoEncoderSettings = new(video.resolution.x,
                                                 VideoCodec.H264) {
     EncoderPreset = EncoderPreset.VerySlow,
     Bitrate = (int)(video.mediaFile.Info.Bitrate),
-    CRF = 8
+    CRF = 40
 };
 using MediaOutput mediaOutput = MediaBuilder.CreateContainer($@"C:\Users\memeb\Desktop\{video.mediaFile.Info.FilePath.Split('\\').Last()}")
                                             .WithVideo(videoEncoderSettings)
