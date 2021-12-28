@@ -194,27 +194,84 @@ internal static class Program {
     private static IEnumerable<IFrame> GenerateFrames(Vector2Int windowSize,
                                                       Video video,
                                                       Vector2Int videoSize) {
-        bool cuda = UserInput.AskUserChoice('c',
-                                            "Use CUDA.",
-                                            $"Use {nameof(Parallel)}.{nameof(Parallel.For)}.");
+        bool gpu = UserInput.AskUserChoice('g',
+                                           "Use GPU.",
+                                           $"Use {nameof(Parallel)}.{nameof(Parallel.For)}.");
 
-        FrameGenerator frameGenerator = new(windowSize,
-                                            video.resolution.x,
-                                            video.resolution.y);
+        IFrameGenerator frameGenerator;
+        if (gpu) {
+            frameGenerator = new GpuFrameGenerator(windowSize, video.resolution);
+        } else {
+            frameGenerator = new FrameGenerator(windowSize, video.resolution);
+        }
 
         IList<IFrame> frames = new List<IFrame>();
         int frameCount = 0;
+        
         while (video.mediaFile.Video.TryGetNextFrame(out ImageData imageData) == true) {
-            using (Image<Bgr24> image = Image.LoadPixelData<Bgr24>(imageData.Data,
-                                                                   videoSize.x,
-                                                                   videoSize.y)) {
-                frames.Add(frameGenerator.Convert(image));
-                image.Dispose();
-            }
+            using Image<Bgr24> image = Image.LoadPixelData<Bgr24>(imageData.Data,
+                                                                  videoSize.x,
+                                                                  videoSize.y);
+            frames.Add(frameGenerator.Convert(image));
+            image.Dispose();
             Console.Write($"\r{++frameCount} frames converted.");
         }
+
         video.mediaFile.Dispose();
         Console.Write("\r\n");
         return frames.ToArray();
     }
 }
+
+/*
+    CPU normal: avg: 1083.8
+    1071.
+    1100.
+    1081.
+    1090.
+    1078.
+    
+    CPU ACCEL: avg: 6440.2
+    6447.
+    6446.
+    6392.
+    6443.
+    6473.
+    
+    GPU ACCEL: avg: 3735
+    3826.
+    3653.
+    3852
+    3659.
+    3685.
+    
+    GPU ACCEL OPTIMIZATION ATTEMPT 1: avg: 3497.33333333 //An improvement!
+    3504.
+    3478.
+    3510.
+    
+    GPU ACCEL OPTIMIZATION ATTEMPT 2: avg: 3501.33333333 //Worse? No effect? Better? Needs more testing.
+    3565.
+    3402.
+    3537.
+    
+    GPU ACCEL OPTIMIZATION ATTEMPT 3: avg: 3509.66666667 //Same thing as before, we don't know for sure.
+    3403.
+    3535.
+    3591.
+    
+    GPU ACCEL OPTIMIZATION ATTEMPT 4: avg: 3193.66666667 //A drastic improvement!
+    3161.
+    3250.
+    3170.
+
+    GPU ACCEL OPTIMIZATION ATTEMPT 5: avg: 3196 //Same, maybe the compiler took care of it already?
+    3178.
+    3239.
+    3171.
+    
+    GPU ACCEL OPTIMIZATION ATTEMPT 6: avg: 3165.66666667 //Minor improvement.
+    3140.
+    3157.
+    3200.
+*/

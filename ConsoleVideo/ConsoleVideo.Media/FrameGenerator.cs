@@ -1,43 +1,25 @@
 ﻿using ConsoleVideo.Math;
+using ILGPU;
+using ILGPU.Runtime;
+using ILGPU.Runtime.CPU;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ConsoleVideo.Media; 
+namespace ConsoleVideo.Media;
 
-public sealed class FrameGenerator : IFrameGenerator{
-    private readonly Vector2Int windowSize;
-
-    private readonly float widthScale,
-                           heightScale;
-
-    private static readonly char[] grayscaleCharacters = {
-        ' ',
-        '.',
-        '|',
-        '+',
-        'S',
-        '$',
-        'L',
-        '&',
-        '#',
-        '@'
-    };
-
-    private static readonly int arraySize = grayscaleCharacters.Length;
-
-    public FrameGenerator(Vector2Int windowSize,
-                          int imageWidth,
-                          int imageHeight) {
+public sealed class FrameGenerator : ConsoleFrameGenerator {
+    public FrameGenerator(Vector2Int windowSize, Vector2Int imageSize) {
         this.windowSize = windowSize;
-        (widthScale, heightScale) = (((float)(imageWidth) / windowSize.x), ((float)(imageHeight) / windowSize.y));
+        (widthScale, heightScale) = (((float)(imageSize.x) / windowSize.x), ((float)(imageSize.y) / windowSize.y));
         return;
     }
 
-    public IFrame Convert(Image<Bgr24> image) {
+    public override IFrame Convert(Image<Bgr24> image) {
         IFrame frame = new CharFrame(windowSize);
-            
+
         Parallel.For(0,
                      windowSize.y,
                      (int y, ParallelLoopState _) => {
@@ -65,15 +47,5 @@ public sealed class FrameGenerator : IFrameGenerator{
                          }
                      });
         return frame;
-    }
-
-    private static sbyte[] ToSByteArray(IReadOnlyList<char> array) {
-        int length = array.Count;
-
-        sbyte[] result = new sbyte[length];
-        for (int i = 0; i < length; ++i) {
-            result[i] = (sbyte)(array[i]);
-        }
-        return result;
     }
 }
