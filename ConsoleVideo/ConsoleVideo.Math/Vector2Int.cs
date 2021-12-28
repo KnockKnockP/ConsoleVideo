@@ -1,14 +1,14 @@
-﻿namespace ConsoleVideo.Math {
-    public struct Vector2Int {
-        public int x,
-                   y;
+﻿namespace ConsoleVideo.Math; 
 
-        public Vector2Int(int _x, int _y) {
-            x = _x;
-            y = _y;
-            return;
-        }
+public struct Vector2Int {
+    public int x,
+               y;
 
-        public override string ToString() => $"({x}, {y})";
+    public Vector2Int(int _x, int _y) {
+        x = _x;
+        y = _y;
+        return;
     }
+
+    public override string ToString() => $"({x}, {y})";
 }
