@@ -34,9 +34,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="FFMediaToolkit" Version="4.1.1" />
+      <PackageReference Include="FFMediaToolkit" Version="4.1.2" />
       <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.4" />
-      <PackageReference Include="SixLabors.ImageSharp" Version="1.0.3" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
     </ItemGroup>
 
 </Project>
