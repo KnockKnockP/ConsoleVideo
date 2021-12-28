@@ -36,8 +36,9 @@ namespace ConsoleVideo {
             }
             return;
         }
-        
-        [SuppressMessage("ReSharper.DPA", "DPA0003: Excessive memory allocations in LOH",
+
+        [SuppressMessage("ReSharper.DPA",
+                         "DPA0003: Excessive memory allocations in LOH",
                          MessageId = "type: System.Byte[]")]
         private static ExitCode Run() {
             InitializeFFmpeg(true);
@@ -240,21 +241,47 @@ namespace ConsoleVideo {
                     5859 ~ 5944. Done.
                     5945 ~ 5961. Done.
                     5962 ~ 6044. Done.
+                    
+                    6045 ~ 6103. Done.
+                    6104 ~ 6129. Done.
+                    6130 ~ 6152. Done.
+                    6153 ~ 6168. Done.
+                    6169 ~ 6196. Done.
+                    6197 ~ 6257. Done.
+                    6258 ~ 6278. Done.
+                    6279 ~ 6297. Done.
+                    6298 ~ 6311. Done.
+                    6312 ~ 6322. Done.
+                    6323 ~ 6332. Done.
+                    6333 ~ 6342. Done.
+                    6343 ~ 6350. Done.
+                    6351 ~ 6360. Done.
+                    6361 ~ 6370. Done.
+                    6371 ~ 6380. Done.
+                    6381 ~ 6398. Done.
+                    6399 ~ 6430. Done.
+                    6431 ~ 6457. Done.
+                    6458 ~ 6471. Done.
+                    6472 ~ 6484. Done.
+                    6485 ~ 6514. Done.
+                    6515 ~ 6560. Done.
+                    
+                    The end.
             */
-            const int startFrameInclusive = 6045;
+            const int startFrameInclusive = 6561;
             CharFrame baseFrame = (CharFrame)(frames[(frames.Count - 1)]);
 
             const string filePath = @"C:\Users\memeb\Desktop\xml.xml";
             int endFrameInclusive = GenerateXml(frames,
-                        filePath,
-                        baseFrame,
-                        startFrameInclusive,
-                        40f);
+                                                filePath,
+                                                baseFrame,
+                                                startFrameInclusive,
+                                                10000f);
 
             Thread.Sleep(500);
             string videoName = $"{startFrameInclusive} to {endFrameInclusive}.mp4";
             Clipboard.SetText(videoName);
-            
+
             PlayVideo(frames,
                       startFrameInclusive,
                       endFrameInclusive);
@@ -306,8 +333,8 @@ namespace ConsoleVideo {
             video.mediaFile.Dispose();
             Console.Write("\r\n");
 
-            frames.Add(new CharFrame(videoSize));
-            for (int i = 0; i < (videoSize.x * videoSize.y); ++i) {
+            frames.Add(new CharFrame(windowSize));
+            for (int i = 0; i < (windowSize.x * windowSize.y); ++i) {
                 char deactivatedChar = ' ';
                 if (inverted) {
                     deactivatedChar = '#';
@@ -324,7 +351,7 @@ namespace ConsoleVideo {
                                       int endFrameInclusive) {
             Console.ReadLine();
             Console.Clear();
-            
+
             for (int i = startFrameInclusive; i <= endFrameInclusive; ++i) {
                 IFrame<char> frame = frames[i];
 
@@ -351,10 +378,10 @@ namespace ConsoleVideo {
 
         #region Xml Generation.
         private static int GenerateXml(IList<IFrame<char>> frames,
-                                        string filePath,
-                                        CharFrame baseFrame,
-                                        int startFrameInclusive,
-                                        float maxFileSize) {
+                                       string filePath,
+                                       CharFrame baseFrame,
+                                       int startFrameInclusive,
+                                       float maxFileSize) {
             XmlWriterSettings xmlWriterSettings = new() {
                 Async = false,
                 CheckCharacters = true,
@@ -367,7 +394,7 @@ namespace ConsoleVideo {
                 NamespaceHandling = NamespaceHandling.OmitDuplicates,
                 NewLineChars = "\n"
             };
-            
+
             XmlDocument xmlDocument = new();
 
             int returnI = 0;
@@ -422,7 +449,7 @@ namespace ConsoleVideo {
                         actionsName.Value = "ACTIONS";
                         actionsBlock.Attributes?.Append(actionsName);
                     }
-                    
+
                     {
                         XmlNode previousBlock = null;
 
@@ -464,8 +491,9 @@ namespace ConsoleVideo {
                             using MemoryStream memoryStream = new();
                             using XmlWriter xmlWriterMemory = XmlWriter.Create(memoryStream, xmlWriterSettings);
                             xmlDocument.WriteTo(xmlWriterMemory);
+                            
+                            returnI = i;
                             if ((memoryStream.Length * 0.001) > maxFileSize) {
-                                returnI = i;
                                 break;
                             }
                         }
@@ -481,7 +509,7 @@ namespace ConsoleVideo {
             if (File.Exists(filePath)) {
                 File.Delete(filePath);
             }
-            
+
             using XmlWriter xmlWriterFile = XmlWriter.Create(filePath, xmlWriterSettings);
             xmlDocument.Save(xmlWriterFile);
 
@@ -495,7 +523,7 @@ namespace ConsoleVideo {
             Clipboard.SetText(streamReader.ReadToEnd());
             streamReader.Close();
             streamReader.Dispose();
-            
+
             return returnI;
         }
 
@@ -629,7 +657,9 @@ namespace ConsoleVideo {
                 }
 
                 {
-                    VariableReferenceBlock variableReferenceBlock = new(xmlDocument, variable, objectInstance);
+                    VariableReferenceBlock variableReferenceBlock = new(xmlDocument,
+                                                                        variable,
+                                                                        objectInstance);
                     getVariableFirstParameter.AppendChild(variableReferenceBlock.GeneratedVariableReferenceBlock);
                 }
             }
