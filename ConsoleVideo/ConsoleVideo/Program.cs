@@ -205,7 +205,7 @@ namespace ConsoleVideo {
             IList<IFrame> frames = new List<IFrame>();
             int frameCount = 0;
             while (video.mediaFile.Video.TryGetNextFrame(out ImageData imageData) == true) {
-                using (Image<Rgb24> image = Image.LoadPixelData<Rgb24>(imageData.Data,
+                using (Image<Bgr24> image = Image.LoadPixelData<Bgr24>(imageData.Data,
                                                                        videoSize.x,
                                                                        videoSize.y)) {
                     frames.Add(frameGenerator.Convert(image));

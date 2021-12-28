@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ConsoleVideo.Media {
-    public class FrameGenerator {
+    public class FrameGenerator : IFrameGenerator{
         private readonly Vector2Int windowSize;
 
         private readonly float widthScale,
@@ -26,15 +26,15 @@ namespace ConsoleVideo.Media {
 
         private static readonly int arraySize = grayscaleCharacters.Length;
 
-        public FrameGenerator(Vector2Int _windowSize,
-                              int _imageWidth,
-                              int _imageHeight) {
-            windowSize = _windowSize;
-            (widthScale, heightScale) = (((float)(_imageWidth) / windowSize.x), ((float)(_imageHeight) / windowSize.y));
+        public FrameGenerator(Vector2Int windowSize,
+                              int imageWidth,
+                              int imageHeight) {
+            this.windowSize = windowSize;
+            (widthScale, heightScale) = (((float)(imageWidth) / windowSize.x), ((float)(imageHeight) / windowSize.y));
             return;
         }
 
-        public IFrame Convert(Image<Rgb24> image) {
+        public IFrame Convert(Image<Bgr24> image) {
             IFrame frame = new CharFrame(windowSize);
             
             Parallel.For(0,
@@ -45,7 +45,7 @@ namespace ConsoleVideo.Media {
                              for (int x = 0; x < windowSize.x; ++x) {
                                  int xArray = (int)(System.Math.Round(x * widthScale));
 
-                                 Rgb24 color = image[xArray, yArray];
+                                 Bgr24 color = image[xArray, yArray];
                                  byte average = (byte)((color.R + color.G + color.B) / 3);
 
                                  float index = ((float)(average) / byte.MaxValue);
