@@ -134,13 +134,12 @@ namespace ConsoleVideo {
         }
 
         private static ExitCode LoadVideo(out Video video) {
-            video = null;
-
             using CommonOpenFileDialog commonOpenFileDialog = new("Select a video to play.");
             commonOpenFileDialog.Filters.Add(new CommonFileDialogFilter("mp4 video", "*.mp4"));
             commonOpenFileDialog.Filters.Add(new CommonFileDialogFilter("AVI video", "*.avi"));
 
             if (commonOpenFileDialog.ShowDialog() != CommonFileDialogResult.Ok) {
+                video = null;
                 return ExitCode.FileDialogFailed;
             }
 

@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net48</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <AssemblyVersion>1.0.1</AssemblyVersion>
         <Configurations>Debug-Windows;Release-Windows</Configurations>
         <Platforms>x64</Platforms>
         <PackageVersion>1.0.1</PackageVersion>
         <LangVersion>preview</LangVersion>
+        <Nullable>disable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug-Windows|x64' ">

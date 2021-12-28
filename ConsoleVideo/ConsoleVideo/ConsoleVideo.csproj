@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net48</TargetFramework>
+        <TargetFramework>net6.0-windows</TargetFramework>
         <Configurations>Release-Windows;Debug-Windows</Configurations>
         <Platforms>x64</Platforms>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -12,6 +12,7 @@
         <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
         <StartupObject>ConsoleVideo.Program</StartupObject>
         <LangVersion>preview</LangVersion>
+        <Nullable>disable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release-Windows|x64' ">
