@@ -15,7 +15,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace ConsoleVideo; 
+namespace ConsoleVideo;
 
 internal static class Program {
     private static bool IsPlatformSupported => (Environment.OSVersion.Platform == PlatformID.Win32NT);
@@ -198,6 +198,8 @@ internal static class Program {
                                            "Use GPU.",
                                            $"Use {nameof(Parallel)}.{nameof(Parallel.For)}.");
 
+        Console.Write("\r\nPress E to stop converting frames and start replaying.\r\n");
+
         IFrameGenerator frameGenerator;
         if (gpu) {
             frameGenerator = new GpuFrameGenerator(windowSize, video.resolution);
@@ -207,14 +209,20 @@ internal static class Program {
 
         IList<IFrame> frames = new List<IFrame>();
         int frameCount = 0;
-        
+
         while (video.mediaFile.Video.TryGetNextFrame(out ImageData imageData) == true) {
             using Image<Bgr24> image = Image.LoadPixelData<Bgr24>(imageData.Data,
                                                                   videoSize.x,
                                                                   videoSize.y);
             frames.Add(frameGenerator.Convert(image));
-            image.Dispose();
             Console.Write($"\r{++frameCount} frames converted.");
+
+            if (Console.KeyAvailable &&
+                Console.ReadKey()
+                       .Key ==
+                ConsoleKey.E) {
+                break;
+            }
         }
 
         video.mediaFile.Dispose();
