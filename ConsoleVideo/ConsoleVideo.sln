@@ -18,11 +18,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleVideo.Media", "Conso
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleVideo.Math", "ConsoleVideo.Math\ConsoleVideo.Math.csproj", "{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CUDA11.4", "CUDA11.4\CUDA11.4.vcxproj", "{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}"
-	ProjectSection(ProjectDependencies) = postProject
-		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E} = {E8F22BDE-A1D3-469B-B12E-73A40CD9773E}
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug-Windows|x64 = Debug-Windows|x64
@@ -72,14 +67,6 @@ Global
 		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}.Release-Windows|x64.Build.0 = Release-Windows|x64
 		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}.Release-Windows|x64.Deploy.0 = Release-Windows|x64
 		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}.Release-Windows|x86.ActiveCfg = Release-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Debug-Windows|x64.ActiveCfg = Debug-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Debug-Windows|x64.Build.0 = Debug-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Debug-Windows|x86.ActiveCfg = Debug-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Debug-Windows|x86.Build.0 = Debug-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Release-Windows|x64.ActiveCfg = Release-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Release-Windows|x64.Build.0 = Release-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Release-Windows|x86.ActiveCfg = Debug-Windows|x64
-		{ABD33F25-2A69-4F33-85F9-1CDB4CED7568}.Release-Windows|x86.Build.0 = Debug-Windows|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

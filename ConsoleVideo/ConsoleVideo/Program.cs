@@ -1,6 +1,4 @@
-﻿//TODO: Either just remove CUDA support or just rewrite this whole application in C++.
-
-using ConsoleVideo.IO;
+﻿using ConsoleVideo.IO;
 using ConsoleVideo.Math;
 using ConsoleVideo.Media;
 using ConsoleVideo.Windows;
@@ -37,7 +35,7 @@ namespace ConsoleVideo {
             return;
         }
 
-        private static ExitCode Run(IReadOnlyList<string> arguments) {
+        private static ExitCode Run(IEnumerable<string> arguments) {
             if (IsPlatformSupported == false) {
                 return ExitCode.PlatformNotSupported;
             }
@@ -46,8 +44,7 @@ namespace ConsoleVideo {
             Console.CursorVisible = false;
             Console.Clear();
 
-            //Yes, this is a shitty way of handling errors.
-            ExitCode tempExitCode = InitializeFFmpeg(arguments.Contains("--automaticFFmpeg")); //TODO: THIS IS A BAD WAY OF HANDLING ARGUMENTS, WRITE A BETTER CODE.
+            ExitCode tempExitCode = InitializeFFmpeg(arguments.Contains("--automaticFFmpeg"));
             if (tempExitCode != ExitCode.Success) {
                 return tempExitCode;
             }
@@ -181,9 +178,7 @@ namespace ConsoleVideo {
         }
 
         private static Vector2Int ResizeConsole(Video video) {
-            //const int emptySpace = 5;
-            const int emptySpace = 0;
-            Vector2Int largestWindowSize = new((Console.LargestWindowWidth - emptySpace), (Console.LargestWindowHeight - emptySpace)),
+            Vector2Int largestWindowSize = new(Console.LargestWindowWidth, Console.LargestWindowHeight),
                        windowSize = new(largestWindowSize.x, largestWindowSize.y);
 
             if (largestWindowSize.x > largestWindowSize.y) {
@@ -200,11 +195,10 @@ namespace ConsoleVideo {
                                                           Video video,
                                                           Vector2Int videoSize) {
             bool cuda = UserInput.AskUserChoice('c',
-                                                "Use CUDA 11.4 (Very slow due to bad implementation + dependency of .NET libraries. Memory leak may occur).",
+                                                "Use CUDA.",
                                                 $"Use {nameof(Parallel)}.{nameof(Parallel.For)}.");
 
-            FrameGenerator frameGenerator = new(cuda,
-                                                windowSize,
+            FrameGenerator frameGenerator = new(windowSize,
                                                 video.resolution.x,
                                                 video.resolution.y);
 
