@@ -13,6 +13,7 @@
         <StartupObject>ConsoleVideo.Program</StartupObject>
         <LangVersion>preview</LangVersion>
         <Nullable>disable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release-Windows|x64' ">
