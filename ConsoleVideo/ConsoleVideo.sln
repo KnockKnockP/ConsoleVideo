@@ -14,8 +14,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleVideo.Media", "Conso
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleVideo.Math", "ConsoleVideo.Math\ConsoleVideo.Math.csproj", "{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoProcessing", "VideoProcessing\VideoProcessing.csproj", "{F50D39BC-8717-4725-8DD0-7E2E71BF6728}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug-Windows|x64 = Debug-Windows|x64
@@ -52,13 +50,6 @@ Global
 		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}.Release-Windows|x64.Build.0 = Release-Windows|x64
 		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}.Release-Windows|x64.Deploy.0 = Release-Windows|x64
 		{E8F22BDE-A1D3-469B-B12E-73A40CD9773E}.Release-Windows|x86.ActiveCfg = Release-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Debug-Windows|x64.ActiveCfg = Debug-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Debug-Windows|x64.Build.0 = Debug-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Debug-Windows|x86.ActiveCfg = Debug-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Release-Windows|x64.ActiveCfg = Release-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Release-Windows|x64.Build.0 = Release-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Release-Windows|x64.Deploy.0 = Release-Windows|x64
-		{F50D39BC-8717-4725-8DD0-7E2E71BF6728}.Release-Windows|x86.ActiveCfg = Release-Windows|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
